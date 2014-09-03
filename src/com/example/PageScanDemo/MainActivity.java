@@ -105,7 +105,7 @@ public class MainActivity extends FragmentActivity implements View.OnClickListen
             setLeftBtnEnable(true);
         } else if (view.getId() == R.id.new_btn) {
             addPage();
-            tabPageScanView.addMainView(tabPageScanView.getCurrentPosition() + 1, genFragmentTag(tagIndex));
+            tabPageScanView.addMainView(tabPageScanView.getCurrentPosition() + 1, currentTag);
             tabPageScanView.goToCenter(tabPageScanView.getCurrentPosition() + 1);
         }
     }
@@ -158,7 +158,12 @@ public class MainActivity extends FragmentActivity implements View.OnClickListen
 
     private void addPage() {
         FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
-        ft.add(R.id.list_screen, new PageFragment(), genFragmentTag(++tagIndex));
+        Fragment currentFragment = getSupportFragmentManager().findFragmentByTag(currentTag);
+        if (currentFragment != null) {
+            ft.detach(currentFragment);
+        }
+        currentTag = genFragmentTag(++tagIndex);
+        ft.add(R.id.list_screen, new PageFragment(), currentTag);
         ft.commitAllowingStateLoss();
     }
 
