@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentTransaction;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewTreeObserver;
 import android.view.animation.Animation;
@@ -86,28 +87,35 @@ public class MainActivity extends FragmentActivity implements View.OnClickListen
     @Override
     public void onClick(View view) {
         if (view.getId() == R.id.left_btn) {
-            Bitmap bitmap = TabPageScanView.convertViewToBitmap(screenView, SCALE_X, SCALE_Y);
-            if (bitmap != null) {
-                if (tabPageScanView.getChildCount() == 0) {
-                    tabPageScanView.addPageView(0, genFragmentTag(tagIndex), bitmap);
-                } else {
-                    tabPageScanView.changeView(tabPageScanView.getCurrentPosition(), bitmap);
-                }
-                startShowScanAnimation();
-                currentTag = (String) tabPageScanView.getChildAt(tabPageScanView.getCurrentPosition()).getTag();
-                setLeftBtnEnable(false);
-            }
-
+            expand();
         } else if (view.getId() == R.id.right_btn) {
-            String newTag = (String) tabPageScanView.getChildAt(tabPageScanView.getCurrentPosition()).getTag();
-            changeFragment(currentTag, newTag);
-            startHideScanAnimation();
-            setLeftBtnEnable(true);
+            collapse();
         } else if (view.getId() == R.id.new_btn) {
             addPage();
             tabPageScanView.addMainView(tabPageScanView.getCurrentPosition() + 1, currentTag);
-            tabPageScanView.goToCenter(tabPageScanView.getCurrentPosition() + 1);
         }
+    }
+
+    private void expand() {
+        Bitmap bitmap = TabPageScanView.convertViewToBitmap(screenView, SCALE_X, SCALE_Y);
+        if (bitmap != null) {
+            if (tabPageScanView.getChildCount() == 0) {
+                tabPageScanView.addPageView(0, genFragmentTag(tagIndex), bitmap);
+            } else {
+                tabPageScanView.changeView(tabPageScanView.getCurrentPosition(), bitmap);
+            }
+            startShowScanAnimation();
+            currentTag = (String) tabPageScanView.getChildAt(tabPageScanView.getCurrentPosition()).getTag();
+            setLeftBtnEnable(false);
+        }
+    }
+
+    private void collapse() {
+        tabPageScanView.setDeleteVisible(false);
+        String newTag = (String) tabPageScanView.getChildAt(tabPageScanView.getCurrentPosition()).getTag();
+        changeFragment(currentTag, newTag);
+        startHideScanAnimation();
+        setLeftBtnEnable(true);
     }
 
     private void startShowScanAnimation() {
@@ -214,6 +222,7 @@ public class MainActivity extends FragmentActivity implements View.OnClickListen
                 rightView.setVisibility(View.VISIBLE);
             }
             newBtn.setVisibility(View.VISIBLE);
+            tabPageScanView.setDeleteVisible(true);
         }
 
         @Override
@@ -253,5 +262,21 @@ public class MainActivity extends FragmentActivity implements View.OnClickListen
     @Override
     public void onPageSelected(int position) {
         urlTextView.setText("position==" + position);
+    }
+
+    @Override
+    public void onPageDelete(String deleteTag, String newTag) {
+        if (newTag == null) {
+            collapse();
+        } else {
+            Log.e("yj","new===" + newTag);
+            Log.e("yj","deleteTag===" + deleteTag);
+            currentTag = newTag;
+            FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+            transaction.remove(getSupportFragmentManager().findFragmentByTag(deleteTag));
+            transaction.attach(getSupportFragmentManager().findFragmentByTag(newTag));
+            transaction.commitAllowingStateLoss();
+        }
+
     }
 }

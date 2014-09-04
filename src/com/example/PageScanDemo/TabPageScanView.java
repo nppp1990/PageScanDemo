@@ -15,10 +15,12 @@ import android.widget.Scroller;
  * @version 1.0
  * @created 2014-09-01
  */
-public class TabPageScanView extends ViewGroup {
+public class TabPageScanView extends ViewGroup implements View.OnClickListener {
 
     public interface OnPageChangeListener {
         public void onPageSelected(int position);
+
+        public void onPageDelete(String deleteTag, String newTag);
     }
 
     public static final String TAG = "yj";
@@ -35,6 +37,7 @@ public class TabPageScanView extends ViewGroup {
 
     private OnPageChangeListener listener;
     private int currentPosition;
+    private LayoutInflater layoutInflater;
 
     public TabPageScanView(Context context) {
         super(context);
@@ -51,6 +54,7 @@ public class TabPageScanView extends ViewGroup {
         scroller = new Scroller(context);
         final ViewConfiguration configuration = ViewConfiguration.get(context);
         mTouchSlop = configuration.getScaledTouchSlop();
+        layoutInflater = LayoutInflater.from(context);
     }
 
     public void setOnPageChangeListener(OnPageChangeListener listener) {
@@ -70,25 +74,23 @@ public class TabPageScanView extends ViewGroup {
     }
 
     public void addMainView(int index, String tag) {
-        ImageView imageView = new ImageView(context);
-        imageView.setImageBitmap(mainBitmap);
-        imageView.setTag(tag);
-        ViewGroup.LayoutParams layoutParams = new ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        addView(imageView, index, layoutParams);
+        currentPosition++;
+        addPageView(index, tag, mainBitmap);
     }
 
     public void addPageView(int index, String tag, Bitmap bitmap) {
-        ImageView imageView = new ImageView(context);
+        View view = layoutInflater.inflate(R.layout.layout_img_page, null);
+        ImageView imageView = (ImageView) view.findViewById(R.id.img);
         imageView.setImageBitmap(bitmap);
-        imageView.setTag(tag);
-        ViewGroup.LayoutParams layoutParams = new ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        addView(imageView, index, layoutParams);
+        view.setTag(tag);
+        View deleteView = view.findViewById(R.id.delete);
+        deleteView.setOnClickListener(this);
+        addView(view, index);
     }
 
+
     public void changeView(int index, Bitmap bitmap) {
-        ImageView imageView = (ImageView) getChildAt(index);
+        ImageView imageView = (ImageView) (getChildAt(index).findViewById(R.id.img));
         imageView.setImageBitmap(bitmap);
     }
 
@@ -107,6 +109,7 @@ public class TabPageScanView extends ViewGroup {
                 childLeft += (childWidth + imgPadding);
             }
         }
+        moveToScreen(currentPosition);
     }
 
     private int imgWidth;
@@ -321,6 +324,40 @@ public class TabPageScanView extends ViewGroup {
 
     public void setImgPadding(int padding) {
         imgPadding = padding;
+    }
+
+    public void setDeleteVisible(boolean visible) {
+        View deleteView = getChildAt(currentPosition).findViewById(R.id.delete);
+        deleteView.setVisibility(visible ? View.VISIBLE : View.GONE);
+    }
+
+
+    @Override
+    public void onClick(View view) {
+        if (view.getId() == R.id.delete) {
+            int i = indexOfChild((View) view.getParent());
+            if (i != currentPosition) {
+                return;
+            }
+
+            String newTag = null;
+            String deleteTag = null;
+            if (getChildCount() == 1) {
+
+            } else if (currentPosition == getChildCount() - 1) {
+                newTag = (String) getChildAt(currentPosition - 1).getTag();
+                deleteTag = (String) getChildAt(currentPosition).getTag();
+                removeViewAt(currentPosition);
+                currentPosition--;
+            } else {
+                newTag = (String) getChildAt(currentPosition + 1).getTag();
+                deleteTag = (String) getChildAt(currentPosition).getTag();
+                removeViewAt(currentPosition);
+            }
+            if (listener != null) {
+                listener.onPageDelete(deleteTag, newTag);
+            }
+        }
     }
 
 
